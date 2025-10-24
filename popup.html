@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Rifcare Web Summarizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+      /* ===== Reset & base ===== */
+      :root{--bg:#f7f9fc;--card:#ffffff;--muted:#6b7280;--accent1:#2563eb;--accent2:#7c3aed}
+      *{box-sizing:border-box}
+      html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;color:#0f172a;background:var(--bg)}
+
+      /* ===== Popup container ===== */
+      .wrap{width:420px;padding:18px}
+
+      /* ===== Header: centered title + subtitle with soft gradient background ===== */
+      .header{
+        border-radius:14px;padding:18px 16px;text-align:center;margin-bottom:14px;background:linear-gradient(180deg,rgba(37,99,235,0.06),rgba(124,58,237,0.03));box-shadow:0 6px 18px rgba(15,23,42,0.06);
+      }
+      .title{font-size:18px;font-weight:700;margin:0;color:#0b1220}
+      .subtitle{font-size:12px;color:var(--muted);margin-top:6px}
+
+      /* ===== Card style (applies to summary & history & ask) ===== */
+      .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 8px 24px rgba(15,23,42,0.04);border:1px solid rgba(15,23,42,0.03);margin-bottom:12px}
+      .section-title{font-size:13px;font-weight:600;margin-bottom:10px;color:#0f172a}
+
+      /* ===== Summarize button (large, centered gradient) ===== */
+      .summarize-wrap{text-align:center;margin-bottom:10px}
+      #summarizeBtn{appearance:none;border:0;padding:12px 22px;border-radius:12px;color:white;font-weight:700;background:linear-gradient(90deg,var(--accent1),var(--accent2));cursor:pointer;box-shadow:0 10px 30px rgba(37,99,235,0.12);font-size:15px;transition:transform .12s ease, box-shadow .12s ease}
+      #summarizeBtn:hover{transform:translateY(-3px);box-shadow:0 18px 40px rgba(37,99,235,0.16)}
+
+      /* ===== Ask UI (full-width input + ask button) ===== */
+      .ask-row{display:flex;gap:8px}
+      #questionInput{flex:1;padding:10px 12px;border-radius:10px;border:1px solid #e6eefb;background:#fbfdff;font-size:13px;color:#0f172a}
+      #askBtn{padding:9px 14px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent1),var(--accent2));color:white;font-weight:600;cursor:pointer;transition:transform .12s ease}
+      #askBtn:hover{transform:translateY(-2px)}
+
+      /* ===== Summary list styling ===== */
+      #summaryArea{min-height:86px;color:#0f172a;line-height:1.5;font-size:14px}
+      #summaryArea ul{padding-left:18px;margin:0}
+
+      /* ===== History styling ===== */
+      #historyArea{font-size:13px;color:var(--muted);min-height:48px}
+
+      /* ===== Small helpers ===== */
+      .muted{color:var(--muted)}
+      .small{font-size:12px;color:var(--muted)}
+
+  /* Footer */
+  .popup-footer{margin-top:12px;padding-top:8px;border-top:1px solid rgba(15,23,42,0.03);text-align:center;font-size:12px;color:rgba(11,17,32,0.45)}
+  .popup-footer .footer-name{color:rgba(11,17,32,0.6);font-weight:600}
+
+  /* ===== Collapsible behavior ===== */
+  .toggle-btn{appearance:none;border:0;background:transparent;font-size:14px;cursor:pointer;color:var(--muted);padding:6px;border-radius:6px}
+  /* Collapsible: when collapsed hide completely; when expanded allow internal scrolling so content doesn't overflow and overlap the next card */
+  .collapsible.collapsed{max-height:0;overflow:hidden;transition:max-height .18s ease;padding-top:0;padding-bottom:0}
+  .collapsible.expanded{max-height:60vh;overflow-y:auto;transition:max-height .18s ease;padding-top:6px;padding-bottom:6px}
+
+      /* Responsive: keep compact in narrow popups */
+      @media (max-width:440px){.wrap{width:360px;padding:14px}.title{font-size:16px}}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <!-- Header: centered, minimal -->
+      <header class="header">
+        <div class="title">Rifcare Web Summarizer</div>
+        <div class="subtitle">Powered by Gemini Nano</div>
+      </header>
+
+      <!-- Large centered Summarize button and Clear button -->
+      <div class="summarize-wrap" style="display:flex;justify-content:center;gap:10px;align-items:center;margin-bottom:12px">
+        <button id="summarizeBtn">Summarize Page</button>
+        <button id="clearBtn" style="background:#fff;border:1px solid #eef4ff;padding:10px 14px;border-radius:10px;cursor:pointer;color:#0b1220;font-weight:600">Clear</button>
+      </div>
+
+      <!-- Summary card (collapsible) -->
+      <section class="card">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+          <div class="section-title">Summary</div>
+          <button id="summaryToggle" aria-expanded="true" class="toggle-btn" title="Collapse / Expand">▾</button>
+        </div>
+        <!-- Keep original ID so popup.js can populate this area -->
+        <div id="summaryArea" class="collapsible expanded">No summary yet. Click "Summarize Page" to begin.</div>
+      </section>
+
+      <!-- History card (collapsible) -->
+      <section class="card">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+          <div class="section-title">History</div>
+          <button id="historyToggle" aria-expanded="true" class="toggle-btn" title="Collapse / Expand">▾</button>
+        </div>
+        <div id="historyArea" class="collapsible expanded small">No history yet.</div>
+      </section>
+
+      <!-- Ask card: full-width input + Ask button -->
+      <section class="card">
+        <div class="section-title">Ask a question</div>
+        <div class="ask-row">
+          <!-- Keep IDs so existing popup.js continues to work -->
+          <input id="questionInput" placeholder="Ask something about this page..." />
+          <button id="askBtn">Ask</button>
+        </div>
+        <div id="answerArea" class="small muted" style="margin-top:10px"></div>
+      </section>
+
+      <!-- Mock toggle kept but visually minimal; ID preserved for JS -->
+      <div style="display:flex;justify-content:flex-end;align-items:center;margin-top:6px">
+        <label class="small muted" style="display:flex;gap:8px;align-items:center">
+          <input id="mockToggle" type="checkbox" style="width:14px;height:14px" />
+          Mock
+        </label>
+      </div>
+
+      <!-- Footer credit -->
+      <footer class="popup-footer" aria-hidden="true">
+        Developed by: <span class="footer-name">Ashish Panchal</span>
+      </footer>
+
+    </div>
+
+    <!-- Reuse existing popup.js (no ID changes) -->
+    <script src="popup.js"></script>
+  </body>
+</html>

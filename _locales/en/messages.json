@@ -1,0 +1,8 @@
+{
+  "appName": {
+    "message": "Rifcare Web Summarizer"
+  },
+  "appDescription": {
+    "message": "Summarizes webpages instantly with Gemini Nano and provides Q&A — on-device."
+  }
+}
